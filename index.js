@@ -12,13 +12,13 @@ const { token } = require('./config.json');
 
 
 
-
 //Trayendo a funcionar los comandos
 client.commands = new Collection();
 
 const foldersPath = path.join(__dirname, 'commands');
 const commandFolders = fs.readdirSync(foldersPath);
 
+//  2    ciclos que recorren la carpeta de comandos y extrae cada archivo js
 
 for (const folder of commandFolders) {
 	const commandsPath = path.join(foldersPath, folder);
@@ -34,85 +34,24 @@ for (const folder of commandFolders) {
 	}
 }
 
-client.once(Events.ClientReady, readyClient => {
-	console.log(`Ready! Logged in as ${readyClient.user.tag}`);
-});
+//2 ciclos para extraer cada archivo de la carpeta eventos 
+const eventsPath = path.join(__dirname, 'events');
+const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
 
-client.on(Events.InteractionCreate, async interaction => {
-	if (!interaction.isChatInputCommand()) return;
-	const command = interaction.client.commands.get(interaction.commandName);
-
-	if (!command) {
-		console.error(`No command matching ${interaction.commandName} was found.`);
-		return;
+for (const file of eventFiles) {
+	const filePath = path.join(eventsPath, file);
+	const event = require(filePath);
+	if (event.once) {
+		client.once(event.name, (...args) => event.execute(...args));
+	} else {
+		client.on(event.name, (...args) => event.execute(...args));
 	}
+}
 
-	try {
-		await command.execute(interaction);
-	} catch (error) {
-		console.error(error);
-		if (interaction.replied || interaction.deferred) {
-			await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
-		} else {
-			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
-		}
-	}
-});
+//Creando cooldowns para evitar el spam
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-//CREACION DE RESPUESTAS EN BASE A PALABRAS ESCRITAS 
-client.on("messageCreate", async message => {
-    // Convertir el mensaje a minúsculas para que ignore mayúsculas/minúsculas
-    const msgContent = message.content.toLowerCase();
-
-    // Caso "hola"
-    if (msgContent === "hola") {
-        message.channel.send("Buena la arepa");
-                                } 
-    // Nena
-    else if(msgContent === "nena"){
-        message.channel.send("Como tu no hay");
-    }
-    // Caso "!embed"
-    else if (msgContent === "!embed") {
-        // Crear el embed
-        const embed = new EmbedBuilder()
-            .setTitle("BotEmikukis")
-            .setAuthor({ name: "CGalvisOssa", iconURL: 'https://i.ibb.co/1XPTB0L/Icon-Solarian.jpg', url: 'https://github.com/CGalvisOssa' })
-            .setColor(0x00AE86)
-            .setDescription("Este es un bot de prueba inspirado en emikukis.")
-            .setFooter({ text: "Derechos reservados por cris.sas", iconURL: 'https://i.ibb.co/1XPTB0L/Icon-Solarian.jpg' })
-            .setImage('https://i.ibb.co/fGqKNq0/emikukis.jpg')
-            .setThumbnail('https://i.ibb.co/fGqKNq0/emikukis.jpg')
-            .setTimestamp()
-            .setURL("https://github.com/CraterMaik")
-            .addFields(
-                { name: "Comunidad", value: "Papus" },
-                { name: "Estado", value: "Extrovertida", inline: true },
-                { name: "Novio?", value: "Casada", inline: true }
-            );
-
-        // Enviar el embed al canal
-        message.channel.send({ embeds: [embed] });
-
-    // Default: no hace nada
-    } else {
-        // Aquí puedes agregar una respuesta genérica o dejar vacío si no quieres que responda.
-    }
-});
 
 
 client.login(token);
